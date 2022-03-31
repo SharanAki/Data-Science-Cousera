@@ -1,17 +1,26 @@
-dataFile <- "./household_power_consumption.txt"
-data <- read.table(dataFile, header=TRUE, sep=";", stringsAsFactors=FALSE, dec=".")
-subSetData <- data[data$Date %in% c("1/2/2007","2/2/2007") ,]
+library("data.table")
+library("ggplot2")
 
-#str(subSetData)
-datetime <- strptime(paste(subSetData$Date, subSetData$Time, sep=" "), "%d/%m/%Y %H:%M:%S") 
-globalActivePower <- as.numeric(subSetData$Global_active_power)
-subMetering1 <- as.numeric(subSetData$Sub_metering_1)
-subMetering2 <- as.numeric(subSetData$Sub_metering_2)
-subMetering3 <- as.numeric(subSetData$Sub_metering_3)
+setwd("~/Desktop/datasciencecoursera/4_Exploratory_Data_Analysis/project2")
+path <- getwd()
+download.file(url = "https://d396qusza40orc.cloudfront.net/exdata%2Fdata%2FNEI_data.zip"
+              , destfile = paste(path, "dataFiles.zip", sep = "/"))
+unzip(zipfile = "dataFiles.zip")
 
-png("plot3.png", width=480, height=480)
-plot(datetime, subMetering1, type="l", ylab="Energy Submetering", xlab="")
-lines(datetime, subMetering2, type="l", col="red")
-lines(datetime, subMetering3, type="l", col="blue")
-legend("topright", c("Sub_metering_1", "Sub_metering_2", "Sub_metering_3"), lty=1, lwd=2.5, col=c("black", "red", "blue"))
+# Load the NEI & SCC data frames.
+NEI <- data.table::as.data.table(x = readRDS("summarySCC_PM25.rds"))
+SCC <- data.table::as.data.table(x = readRDS("Source_Classification_Code.rds"))
+
+# Subset NEI data by Baltimore
+baltimoreNEI <- NEI[fips=="24510",]
+
+png("plot3.png")
+
+ggplot(baltimoreNEI,aes(factor(year),Emissions,fill=type)) +
+  geom_bar(stat="identity") +
+  theme_bw() + guides(fill=FALSE)+
+  facet_grid(.~type,scales = "free",space="free") + 
+  labs(x="year", y=expression("Total PM"[2.5]*" Emission (Tons)")) + 
+  labs(title=expression("PM"[2.5]*" Emissions, Baltimore City 1999-2008 by Source Type"))
+
 dev.off()

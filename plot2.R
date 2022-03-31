@@ -1,10 +1,22 @@
-dataFile <- "./household_power_consumption.txt"
-data <- read.table(dataFile, header=TRUE, sep=";", stringsAsFactors=FALSE, dec=".")
-subSetData <- data[data$Date %in% c("1/2/2007","2/2/2007") ,]
+library("data.table")
+path <- getwd()
+download.file(url = "https://d396qusza40orc.cloudfront.net/exdata%2Fdata%2FNEI_data.zip"
+              , destfile = paste(path, "dataFiles.zip", sep = "/"))
+unzip(zipfile = "dataFiles.zip")
 
-#str(subSetData)
-datetime <- strptime(paste(subSetData$Date, subSetData$Time, sep=" "), "%d/%m/%Y %H:%M:%S") 
-globalActivePower <- as.numeric(subSetData$Global_active_power)
-png("plot2.png", width=480, height=480)
-plot(datetime, globalActivePower, type="l", xlab="", ylab="Global Active Power (kilowatts)")
+SCC <- data.table::as.data.table(x = readRDS(file = "Source_Classification_Code.rds"))
+NEI <- data.table::as.data.table(x = readRDS(file = "summarySCC_PM25.rds"))
+
+NEI[, Emissions := lapply(.SD, as.numeric), .SDcols = c("Emissions")]
+totalNEI <- NEI[fips=='24510', lapply(.SD, sum, na.rm = TRUE)
+                , .SDcols = c("Emissions")
+                , by = year]
+
+png(filename='plot2.png')
+
+barplot(totalNEI[, Emissions]
+        , names = totalNEI[, year]
+        , xlab = "Years", ylab = "Emissions"
+        , main = "Emissions over the Years")
+
 dev.off()
